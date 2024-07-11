@@ -52,7 +52,8 @@ class Inverter(Node):
     def run(self):
         return not self.children.run()
 
-class life_cycle():
+
+class life_cycle:
     def __init__(self, handle):
         self.tick = 0
         self.frequent = 10  # hz
