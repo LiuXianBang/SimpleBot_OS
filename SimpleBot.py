@@ -1,9 +1,14 @@
-from utils.EventServer import *
-from utils.ConfigServer import *
-from utils.TaskServer import *
+from utils.EventServer import EventServer
+from utils.ConfigServer import ConfigServer
+from utils.TaskServer import (
+    TaskServer,
+    VideoCaptureTask,
+    Show_VideoCapture,
+    defaultTask_simple,
+)
 
 # behaviour tree
-from utils.Behavior_Tree import *
+import utils.Behavior_Tree as Behavior_Tree
 
 import time
 
@@ -11,45 +16,43 @@ import time
 class SimpleBot:
     def __init__(self):
 
-        self.ConfigServer = ConfigServer(config_path="config.json")
-        self.ConfigServer.variables["bot_info"]["name"] = "SimpleBot"
-        self.ConfigServer.variables["bot_info"]["bot_version"] = "1.0"
+        self.Status = ConfigServer(config_path="status.json")
+        self.Config = ConfigServer(config_path="config.json")
 
         self.EventServer = EventServer(self)
         self.TaskServer = TaskServer(self)
 
-        self.video_capture = VideoCaptureTask(self, 0)
+    def init(self):
+
+        if self.Config.variables["bot_info"]["name"] == {}:
+            self.Config.variables["bot_info"]["name"] = "SimpleBot"
+        if self.Config.variables["bot_info"]["bot_version"] == {}:
+            self.Config.variables["bot_info"]["bot_version"] = "1.0"
+        if self.Config.variables["config"]["Camera_path"] == {}:
+            self.Config.variables["config"]["Camera_path"] = "0"
+
+    def onLoad(self):
+        self.video_capture = VideoCaptureTask(
+            self, int(self.Config.variables["config"]["Camera_path"])
+        )
         self.TaskServer.register_task("Camera1", self.video_capture)
 
-        defaultTask_simple1 = defaultTask_simple(self)
-        defaultTask_simple2 = defaultTask_simple(self)
-        self.TaskServer.register_task("default_task1", defaultTask_simple1)
-        self.TaskServer.register_task("default_task2", defaultTask_simple2)
+        self.ShowFrame_task = Show_VideoCapture(self, self.video_capture)
+        self.TaskServer.register_task("ShowFrame", self.ShowFrame_task)
 
-
-class CameraEvent(event):
-    def __init__(self, name) -> None:
-        super().__init__(name)
-
-    def trigger(self) -> bool:
-        return True
+    def onEnable(self):
+        pass
 
 
 if __name__ == "__main__":
 
+    # init() -> onLoad() -> run()
     bot = SimpleBot()
-    CameraEvent1 = CameraEvent("Camera1")
-    bot.EventServer.register_event(CameraEvent1)
+    bot.init()
+    bot.onLoad()
 
     import time
 
     while True:
-        # time.sleep(2)
-        bot.TaskServer.run()
-
-        grabbed, frame = bot.video_capture.read()
-        if not grabbed:
-            break
-        cv2.imshow("Frame", frame)
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            break
+        time.sleep(2)
+        # bot.TaskServer.run()

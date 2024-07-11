@@ -15,7 +15,7 @@ class EventServer:
         if isinstance(_event, event):
             self.events_list.append(_event)
             for _event in self.events_list:
-                self.instance.ConfigServer.variables["status"]["register_event"] = {
+                self.instance.Status.variables["status"]["register_event"] = {
                     "name": _event.name
                 }
 

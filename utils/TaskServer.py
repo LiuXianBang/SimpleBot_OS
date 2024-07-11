@@ -54,12 +54,12 @@ class TaskServer:
             for task in self.multi_threads_task:
                 task_list.append({"name": task[0], "type": "thread"})
 
-            self.instance.ConfigServer.variables["status"]["register_task"] = task_list
+            self.instance.Status.variables["status"]["register_task"] = task_list
 
     def run(self):
         for task in self.default_tasks:
             print("schedule [%s] Default Task" % task[0])
-            self.instance.ConfigServer.variables["status"]["running_task"] = {
+            self.instance.Status.variables["status"]["running_task"] = {
                 "name": task[0],
                 "type": "default",
                 "start_time": time.time(),
@@ -103,5 +103,20 @@ class VideoCaptureTask(threadingTask):
             self.capture.release()
 
     def read(self):
-
         return self.grabbed, self.frame
+
+
+class Show_VideoCapture(threadingTask):
+    def __init__(self, instance, capture_task, title="Frame"):
+        super().__init__(instance)
+        self.capture_task = capture_task
+        self.title = title
+
+    def run(self):
+        while True:
+            grabbed, frame = self.capture_task.read()
+            if not grabbed:
+                break
+            cv2.imshow(self.title, frame)
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                break

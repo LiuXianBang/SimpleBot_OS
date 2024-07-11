@@ -2,6 +2,7 @@ import json
 import threading
 from collections import defaultdict
 import time
+import os
 
 
 def convert_dict(d):
@@ -22,12 +23,16 @@ class ConfigServer:
     def __init__(self, config_path):
         self.config_path = config_path
         self.variables = defaultdict(list)
+
+        if not os.path.isfile(self.config_path):
+            self.save(self.config_path)
+
         self.variables = dict_to_defaultdict(self.load(self.config_path))
 
         self.is_stop = False
+        self.save_period = 0.2
         self.Thread = threading.Thread(target=self.auto_save, daemon=True)
         self.Thread.start()
-        self.save_period = 0.2
 
     def auto_save(self):
         while not self.is_stop:
@@ -36,7 +41,10 @@ class ConfigServer:
             if load_variable != convert_dict(self.variables):
                 self.save(self.config_path)
 
-    # save as json
+    def load_config(self):
+        self.variables = dict_to_defaultdict(self.load(self.config_path))
+        return self.variables
+
     def save(self, filename):
         with open(filename, "w") as f:
             json.dump(convert_dict(self.variables), f)
@@ -47,8 +55,3 @@ class ConfigServer:
                 return json.load(f)
             except json.decoder.JSONDecodeError:
                 return {}
-
-
-if __name__ == "__main__":
-    configServer = ConfigServer()
-    configServer.load("config.json")
